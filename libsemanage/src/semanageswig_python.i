@@ -29,6 +29,41 @@
 	#define STATUS_ERR -1
 %}
 
+%pythoncode %{
+
+import contextlib
+import tempfile
+
+
+def msg_redirect(handle, file):
+    """ Route libsemanage/libsepol messages for this handle to a file-like
+    object with a real file descriptor (open file, pipe write end, tempfile),
+    instead of stderr/stdout.  Pass None to restore the default behaviour. """
+    semanage_msg_set_output(handle, -1 if file is None else file.fileno())
+
+
+@contextlib.contextmanager
+def msg_capture(handle):
+    """ Context manager that captures libsemanage/libsepol messages for this
+    handle into a string, restoring the previous output on exit.
+
+        with semanage.msg_capture(sh) as cap:
+            rc = semanage.semanage_connect(sh)
+        print(cap.value)
+    """
+    class _Captured:
+        value = ""
+    cap = _Captured()
+    with tempfile.TemporaryFile() as f:
+        semanage_msg_set_output(handle, f.fileno())
+        try:
+            yield cap
+        finally:
+            semanage_msg_set_output(handle, -1)
+            f.seek(0)
+            cap.value = f.read().decode(errors="replace")
+%}
+
 %include "stdint.i"
 
 %wrapper %{

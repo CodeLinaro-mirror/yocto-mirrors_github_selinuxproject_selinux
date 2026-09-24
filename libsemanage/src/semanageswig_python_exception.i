@@ -367,6 +367,14 @@
   }
 }
 
+%exception semanage_msg_set_output {
+  $action
+  if (result < 0) {
+     PyErr_SetFromErrno(PyExc_OSError);
+     SWIG_fail;
+  }
+}
+
 %exception semanage_bool_key_create {
   $action
   if (result < 0) {
