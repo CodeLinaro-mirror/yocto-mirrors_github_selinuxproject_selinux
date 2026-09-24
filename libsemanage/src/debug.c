@@ -20,11 +20,13 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 #include "handle.h"
 #include "debug.h"
 
@@ -52,12 +54,30 @@ void semanage_msg_default_handler(void *varg __attribute__((unused)),
 {
 	FILE *stream = NULL;
 	int errsv = 0;
+	int level = semanage_msg_get_level(handle);
 
-	switch (semanage_msg_get_level(handle)) {
-	case SEMANAGE_MSG_ERR:
-		stream = stderr;
+	if (level == SEMANAGE_MSG_ERR)
 		errsv = errno;
-		break;
+
+	if (handle->msg_fd >= 0) {
+		dprintf(handle->msg_fd,
+			"%s.%s: ", semanage_msg_get_channel(handle),
+			semanage_msg_get_fname(handle));
+
+		va_list ap;
+		va_start(ap, fmt);
+		vdprintf(handle->msg_fd, fmt, ap);
+		va_end(ap);
+
+		if (errsv && errsv != ENOMEM)
+			dprintf(handle->msg_fd, " (%s).", strerror(errsv));
+
+		dprintf(handle->msg_fd, "\n");
+		return;
+	}
+
+	switch (level) {
+	case SEMANAGE_MSG_ERR:
 	case SEMANAGE_MSG_WARN:
 		stream = stderr;
 		break;
@@ -116,4 +136,26 @@ extern void semanage_msg_set_callback(
 {
 	handle->msg_callback = msg_callback;
 	handle->msg_callback_arg = msg_callback_arg;
+}
+
+int semanage_msg_set_output(semanage_handle_t *handle, int fd)
+{
+	int newfd = -1;
+
+	if (fd >= 0) {
+		newfd = fcntl(fd, F_DUPFD_CLOEXEC, 0);
+		if (newfd < 0)
+			return -1;
+	}
+
+	if (handle->msg_fd >= 0)
+		close(handle->msg_fd);
+	handle->msg_fd = newfd;
+
+	/* Restore the default handler if it was cleared or replaced,
+	 * so that the fd sink actually takes effect. */
+	handle->msg_callback = semanage_msg_default_handler;
+	handle->msg_callback_arg = NULL;
+
+	return 0;
 }

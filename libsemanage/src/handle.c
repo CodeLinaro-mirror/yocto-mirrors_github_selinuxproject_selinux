@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "direct_api.h"
 #include "handle.h"
@@ -65,6 +66,8 @@ semanage_handle_t *semanage_handle_create_with_path(const char *conf_name)
 	/* Allocate handle */
 	if ((sh = calloc(1, sizeof(semanage_handle_t))) == NULL)
 		goto err;
+
+	sh->msg_fd = -1;
 
 	if ((sh->conf = semanage_conf_parse(conf_name)) == NULL)
 		goto err;
@@ -376,6 +379,8 @@ void semanage_handle_destroy(semanage_handle_t *sh)
 
 	if (sh->funcs != NULL && sh->funcs->destroy != NULL)
 		sh->funcs->destroy(sh);
+	if (sh->msg_fd >= 0)
+		close(sh->msg_fd);
 	semanage_conf_destroy(sh->conf);
 	sepol_handle_destroy(sh->sepolh);
 	free(sh);

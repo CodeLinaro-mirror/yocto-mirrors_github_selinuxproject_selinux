@@ -37,6 +37,7 @@ struct semanage_handle {
 
 	/* Error handling */
 	int msg_level;
+	int msg_fd;
 	const char *msg_channel;
 	const char *msg_fname;
 #ifdef __GNUC__

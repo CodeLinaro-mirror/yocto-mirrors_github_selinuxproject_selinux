@@ -354,3 +354,7 @@ LIBSEMANAGE_3.4 {
 LIBSEMANAGE_3.9 {
     semanage_handle_create_with_path;
 } LIBSEMANAGE_3.4;
+
+LIBSEMANAGE_3.12 {
+    semanage_msg_set_output;
+} LIBSEMANAGE_3.9;

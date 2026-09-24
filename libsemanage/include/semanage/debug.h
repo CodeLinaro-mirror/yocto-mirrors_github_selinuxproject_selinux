@@ -49,4 +49,14 @@ extern void semanage_msg_set_callback(
 			     const char *fmt, ...),
 	void *msg_callback_arg);
 
+/* Direct the default message handler to write all messages
+ * (SEMANAGE_MSG_ERR/WARN/INFO) to the given file descriptor
+ * instead of stderr/stdout. The descriptor is duplicated, so
+ * the caller may close its copy immediately. Pass -1 to restore
+ * the default stderr/stdout behaviour. In either case the default
+ * message handler is (re)installed, replacing any callback set via
+ * semanage_msg_set_callback(). Returns 0 on success, -1 (with errno
+ * set) if the descriptor could not be duplicated. */
+extern int semanage_msg_set_output(semanage_handle_t *handle, int fd);
+
 #endif
