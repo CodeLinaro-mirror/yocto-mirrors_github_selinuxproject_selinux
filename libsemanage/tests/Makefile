@@ -41,7 +41,7 @@ clean distclean:
 	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(LIFECYCLE_TEST) $(ERROR_TESTS) $(SERIAL_TESTS) $(ROLLBACK_TEST)
 	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(LIFECYCLE_TEST) $(ERROR_TESTS) $(SERIAL_TESTS) $(ROLLBACK_TEST) $(RESTART_TEST)
 
-test: all
+test: all test-ibpkey-validation
 	./test-config-empty
 	./$(EXECUTABLE)
 	./$(USER_JOIN_TEST)
@@ -84,6 +84,11 @@ $(ROLLBACK_TEST): regression/test_final_rollback.c ../src/libsemanage.a
 
 $(RESTART_TEST): regression/test_transaction_restart.c ../src/libsemanage.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -Wl,--wrap=scandir -o $@ $^ $(LDLIBS)
+
+test-ibpkey-validation:
+	sh ibpkey-validation/run.sh
+
+.PHONY: test-ibpkey-validation
 
 # Requires SWIG, Python development headers and the built shared library.
 PYTHON ?= python3
