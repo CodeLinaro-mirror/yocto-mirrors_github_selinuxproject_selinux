@@ -2,5 +2,6 @@ libsemanage-tests
 test-user-join-transaction
 test-parse-read-error
 test-read-lock-error
+test-user-delete-error
 *.policy
 /test-config-empty

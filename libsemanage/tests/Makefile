@@ -9,6 +9,7 @@ override CFLAGS += -I../src -I../include
 override LDLIBS += -lcunit -lbz2 -laudit -lselinux -lsepol
 ERROR_TESTS = test-parse-read-error
 ERROR_TESTS = test-read-lock-error test-parse-read-error
+ERROR_TESTS = test-read-lock-error test-user-delete-error test-parse-read-error
 
 OBJECTS = $(SOURCES:.c=.o)
 
@@ -38,11 +39,15 @@ test: all
 	./$(USER_JOIN_TEST)
 	./test-parse-read-error
 	./test-read-lock-error
+	./test-user-delete-error
 
 test-parse-read-error: regression/test_parse_read_error.c ../src/parse_utils.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
 
 test-read-lock-error: regression/test_read_lock_error.c ../src/database.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
+
+test-user-delete-error: regression/test_user_delete_error.c ../src/users_local.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
 
 # Requires SWIG, Python development headers and the built shared library.
