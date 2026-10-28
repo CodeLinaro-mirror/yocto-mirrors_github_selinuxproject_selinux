@@ -11,12 +11,13 @@ ERROR_TESTS = test-parse-read-error
 ERROR_TESTS = test-read-lock-error test-parse-read-error
 ERROR_TESTS = test-read-lock-error test-user-delete-error test-parse-read-error
 LIFECYCLE_TEST = test-handle-lifecycle
+SERIAL_TESTS = test-cache-serial-file test-cache-serial-join test-cache-serial-active test-cache-serial-policydb
 
 OBJECTS = $(SOURCES:.c=.o)
 
 POLICIES = $(CILS:.cil=.policy)
 
-all: $(EXECUTABLE) $(POLICIES) test-config-empty $(USER_JOIN_TEST) $(ERROR_TESTS) $(LIFECYCLE_TEST)
+all: $(EXECUTABLE) $(POLICIES) test-config-empty $(USER_JOIN_TEST) $(ERROR_TESTS) $(LIFECYCLE_TEST) $(SERIAL_TESTS)
 
 test-config-empty: regression/test_config_empty.c ../src/libsemanage.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -Wl,--wrap=strdup $(LDLIBS)
@@ -34,6 +35,7 @@ clean distclean:
 	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) test-config-empty $(USER_JOIN_TEST)
 	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(ERROR_TESTS)
 	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(LIFECYCLE_TEST) $(ERROR_TESTS)
+	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(LIFECYCLE_TEST) $(ERROR_TESTS) $(SERIAL_TESTS)
 
 test: all
 	./test-config-empty
@@ -43,6 +45,7 @@ test: all
 	./test-read-lock-error
 	./test-user-delete-error
 	./$(LIFECYCLE_TEST)
+	@for test in $(SERIAL_TESTS); do ./$$test || exit 1; done
 
 test-parse-read-error: regression/test_parse_read_error.c ../src/parse_utils.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
@@ -55,6 +58,20 @@ test-user-delete-error: regression/test_user_delete_error.c ../src/users_local.c
 
 $(LIFECYCLE_TEST): regression/test_handle_lifecycle.c ../src/libsemanage.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+test-cache-serial-file: SERIAL_BACKEND = FILE
+
+test-cache-serial-join: SERIAL_BACKEND = JOIN
+
+test-cache-serial-active: SERIAL_BACKEND = ACTIVE
+
+test-cache-serial-policydb: SERIAL_BACKEND = POLICYDB
+
+$(SERIAL_TESTS): regression/test_cache_serial_error.c ../src/database_llist.c \
+		../src/database_llist.h ../src/database_file.c \
+		../src/database_join.c ../src/database_activedb.c \
+		../src/database_policydb.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -DTEST_$(SERIAL_BACKEND) -o $@ $< ../src/database_llist.c -lsepol
 
 # Requires SWIG, Python development headers and the built shared library.
 PYTHON ?= python3
