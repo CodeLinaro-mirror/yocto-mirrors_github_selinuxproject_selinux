@@ -13,12 +13,13 @@ ERROR_TESTS = test-read-lock-error test-user-delete-error test-parse-read-error
 LIFECYCLE_TEST = test-handle-lifecycle
 SERIAL_TESTS = test-cache-serial-file test-cache-serial-join test-cache-serial-active test-cache-serial-policydb
 ROLLBACK_TEST = test-final-rollback
+RESTART_TEST = test-transaction-restart
 
 OBJECTS = $(SOURCES:.c=.o)
 
 POLICIES = $(CILS:.cil=.policy)
 
-all: $(EXECUTABLE) $(POLICIES) test-config-empty $(USER_JOIN_TEST) $(ERROR_TESTS) $(LIFECYCLE_TEST) $(SERIAL_TESTS) $(ROLLBACK_TEST)
+all: $(EXECUTABLE) $(POLICIES) test-config-empty $(USER_JOIN_TEST) $(ERROR_TESTS) $(LIFECYCLE_TEST) $(SERIAL_TESTS) $(ROLLBACK_TEST) $(RESTART_TEST)
 
 test-config-empty: regression/test_config_empty.c ../src/libsemanage.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ -Wl,--wrap=strdup $(LDLIBS)
@@ -38,6 +39,7 @@ clean distclean:
 	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(LIFECYCLE_TEST) $(ERROR_TESTS)
 	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(LIFECYCLE_TEST) $(ERROR_TESTS) $(SERIAL_TESTS)
 	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(LIFECYCLE_TEST) $(ERROR_TESTS) $(SERIAL_TESTS) $(ROLLBACK_TEST)
+	rm -rf $(OBJECTS) $(POLICIES) $(EXECUTABLE) $(USER_JOIN_TEST) $(LIFECYCLE_TEST) $(ERROR_TESTS) $(SERIAL_TESTS) $(ROLLBACK_TEST) $(RESTART_TEST)
 
 test: all
 	./test-config-empty
@@ -49,6 +51,7 @@ test: all
 	./$(LIFECYCLE_TEST)
 	@for test in $(SERIAL_TESTS); do ./$$test || exit 1; done
 	./$(ROLLBACK_TEST)
+	./$(RESTART_TEST)
 
 test-parse-read-error: regression/test_parse_read_error.c ../src/parse_utils.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
@@ -78,6 +81,9 @@ $(SERIAL_TESTS): regression/test_cache_serial_error.c ../src/database_llist.c \
 
 $(ROLLBACK_TEST): regression/test_final_rollback.c ../src/libsemanage.a
 	$(CC) $(CFLAGS) $(LDFLAGS) -Wl,--wrap=fsync -Wl,--wrap=rename -Wl,--wrap=link -Wl,--wrap=unlinkat -Wl,--wrap=glob -o $@ $^ $(LDLIBS)
+
+$(RESTART_TEST): regression/test_transaction_restart.c ../src/libsemanage.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -Wl,--wrap=scandir -o $@ $^ $(LDLIBS)
 
 # Requires SWIG, Python development headers and the built shared library.
 PYTHON ?= python3
